@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:spotify_clone/constants/palette.dart';
-import 'package:spotify_clone/constants/routes.dart';
 import 'package:spotify_clone/models/song.dart';
 import 'package:spotify_clone/utils/common_widgets.dart';
-import 'package:spotify_clone/views/current_song.dart';
+import 'package:spotify_clone/views/song.dart';
 import 'package:spotify_clone/widgets/opacity_feedback.dart';
 
 class CurrentlyPlayingSong extends StatelessWidget {
@@ -24,7 +22,20 @@ class CurrentlyPlayingSong extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Get.toNamed(Routes.currentSong),
+      onTap: () => Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              SongView(song: song),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final tween = Tween(begin: Offset(0, 1), end: Offset(0, 0));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
+      ),
       child: _background(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,

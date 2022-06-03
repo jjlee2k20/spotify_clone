@@ -1,49 +1,78 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:spotify_clone/constants/palette.dart';
 import 'package:spotify_clone/models/song.dart';
-import 'package:spotify_clone/controllers/song_controller.dart';
 import 'package:spotify_clone/utils/common_widgets.dart';
 import 'package:spotify_clone/widgets/opacity_feedback.dart';
 
-class CurrentSongView extends StatelessWidget {
-  const CurrentSongView({Key? key}) : super(key: key);
+class SongView extends StatefulWidget {
+  final Song song;
 
-  SongController get controller => Get.find<SongController>();
+  const SongView({Key? key, required this.song}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return GetBuilder<SongController>(builder: (controller) {
-      return Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF775c5c),
-                Color(0xFF121212),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: _mainUi(),
-          ),
-        ),
-      );
+  State<SongView> createState() => _SongViewState();
+}
+
+class _SongViewState extends State<SongView> {
+  bool _isPlaying = false;
+  int _position = 0; // in seconds
+  int _totalDuration = 1;
+
+  AudioPlayer? _player;
+  AudioCache? _cache;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _cache = AudioCache(fixedPlayer: _player);
+
+    _player!.onDurationChanged.listen((duration) {
+      setState(() => _totalDuration = duration.inSeconds);
+    });
+    _player!.onAudioPositionChanged.listen((newPosition) {
+      setState(() => _position = newPosition.inSeconds);
     });
   }
 
-  Widget _mainUi() {
-    final song = controller.currentSong;
+  @override
+  void dispose() {
+    _player!.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF775c5c),
+              Color(0xFF121212),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: _mainUi(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _mainUi(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Column(
       children: [
-        _buildTop(),
+        _buildTop(context),
         SizedBox(height: 70),
         Image.asset(
-          song!.coverImage,
-          width: Get.width - 48,
-          height: Get.width - 48,
+          widget.song.coverImage,
+          width: screenWidth - 48,
+          height: screenWidth - 48,
           fit: BoxFit.cover,
         ),
         SizedBox(height: 70),
@@ -51,7 +80,7 @@ class CurrentSongView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 30),
           child: Column(
             children: [
-              _buildSongDetails(song),
+              _buildSongDetails(),
               SizedBox(height: 28),
               _buildPositionIndicator(),
               SizedBox(height: 2),
@@ -65,12 +94,12 @@ class CurrentSongView extends StatelessWidget {
     );
   }
 
-  Widget _buildTop() => Padding(
+  Widget _buildTop(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: Row(
           children: [
             OpacityFeedback(
-              onPressed: Get.back,
+              onPressed: Navigator.of(context).pop,
               child: Icon(Icons.keyboard_arrow_down, size: 30),
             ),
             Expanded(
@@ -95,17 +124,17 @@ class CurrentSongView extends StatelessWidget {
         ),
       );
 
-  Widget _buildSongDetails(Song song) => Row(
+  Widget _buildSongDetails() => Row(
         children: [
           expandedColumnStart([
             styledText(
-              song.title,
+              widget.song.title,
               fontSize: 20,
               fontWeight: FontWeight.w700,
               oneLineEllipsis: true,
             ),
             styledText(
-              song.artistName,
+              widget.song.artistName,
               color: Colors.white.withOpacity(0.6),
               fontSize: 16,
               oneLineEllipsis: true,
@@ -113,8 +142,8 @@ class CurrentSongView extends StatelessWidget {
           ]),
           SizedBox(width: 16),
           Icon(
-            song.liked ? Icons.favorite : Icons.favorite_border,
-            color: song.liked ? Palette.green : Colors.white,
+            widget.song.liked ? Icons.favorite : Icons.favorite_border,
+            color: widget.song.liked ? Palette.green : Colors.white,
             size: 24,
           ),
         ],
@@ -131,10 +160,10 @@ class CurrentSongView extends StatelessWidget {
           ),
           child: Slider(
             min: 0,
-            max: controller.totalDuration.toDouble(),
-            value: controller.position.toDouble(),
+            max: _totalDuration.toDouble(),
+            value: _position.toDouble(),
             onChanged: (value) {
-              controller.seek(value.toInt());
+              _seek(value.toInt());
             },
             activeColor: Colors.white,
             inactiveColor: Colors.white.withOpacity(0.1),
@@ -146,13 +175,13 @@ class CurrentSongView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            formatDuration(controller.position),
+            formatDuration(_position),
             style: TextStyle(
               color: Colors.white.withOpacity(0.6),
             ),
           ),
           Text(
-            formatDuration(controller.totalDuration),
+            formatDuration(_totalDuration),
             style: TextStyle(
               color: Colors.white.withOpacity(0.6),
             ),
@@ -164,13 +193,10 @@ class CurrentSongView extends StatelessWidget {
         children: [
           Icon(Icons.shuffle, size: 24),
           Spacer(flex: 3),
-          OpacityFeedback(
-            onPressed: controller.prevSong,
-            child: Icon(Icons.skip_previous, size: 36),
-          ),
+          Icon(Icons.skip_previous, size: 36),
           Spacer(flex: 2),
           OpacityFeedback(
-            onPressed: controller.playOrPause,
+            onPressed: _playOrPause,
             child: Container(
               width: 60,
               height: 60,
@@ -180,7 +206,7 @@ class CurrentSongView extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  controller.isPlaying ? Icons.pause : Icons.play_arrow,
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
                   color: Colors.black,
                   size: 36,
                 ),
@@ -188,14 +214,22 @@ class CurrentSongView extends StatelessWidget {
             ),
           ),
           Spacer(flex: 2),
-          OpacityFeedback(
-            onPressed: controller.nextSong,
-            child: Icon(Icons.skip_next, size: 36),
-          ),
+          Icon(Icons.skip_next, size: 36),
           Spacer(flex: 3),
           Icon(Icons.loop, size: 24),
         ],
       );
+
+  void _playOrPause() {
+    setState(() => _isPlaying = !_isPlaying);
+    if (_isPlaying) {
+      _cache!.play(widget.song.mp3Path);
+    } else {
+      _player!.pause();
+    }
+  }
+
+  _seek(int to) => _player!.seek(Duration(seconds: to));
 }
 
 String formatDuration(int duration) {

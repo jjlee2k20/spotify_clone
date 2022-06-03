@@ -1,11 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:spotify_clone/constants/library.dart';
-import 'package:spotify_clone/controllers/song_controller.dart';
+import 'package:spotify_clone/models/song.dart';
 import 'package:spotify_clone/utils/common_widgets.dart';
-import 'package:spotify_clone/widgets/app_bottom_bar.dart';
+import 'package:spotify_clone/widgets/currently_playing_song.dart';
 import 'package:spotify_clone/widgets/opacity_feedback.dart';
 import 'package:spotify_clone/widgets/play_shuffle_button.dart';
 import 'package:spotify_clone/widgets/shrink_feedback.dart';
@@ -20,79 +19,32 @@ class LikedSongsView extends StatefulWidget {
 
 class _LikedSongsViewState extends State<LikedSongsView> {
   final _scrollController = ScrollController();
-  // feels kind of hacky idk
-  double _appBarOpacity = 0;
-  double _appBarTextOpacity = 0;
-
-  SongController get controller => Get.find<SongController>();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(() {
-      setState(() {
-        if (_scrollController.offset < 40) {
-          _appBarOpacity = 0;
-          _appBarTextOpacity = 0;
-        } else {
-          _appBarOpacity = min((_scrollController.offset - 40) / 10, 1);
-          _appBarTextOpacity = min((_scrollController.offset - 40) / 60, 1);
-        }
-      });
-    });
-  }
+  Song? _currentSong;
 
   @override
   Widget build(BuildContext context) {
     // first section: building the main listview
-    return GetBuilder<SongController>(builder: (controller) {
-      return Scaffold(
-        appBar: _buildAppBar(),
-        extendBodyBehindAppBar: true,
-        body: _buildMainScrollView(),
-        bottomSheet: AppBottomBar(),
-      );
-    });
-  }
-
-  PreferredSizeWidget _buildAppBar() => PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF293360).withOpacity(_appBarOpacity),
-                Color(0xFF212740).withOpacity(_appBarOpacity),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              child: Row(
-                children: [
-                  OpacityFeedback(
-                    onPressed: Get.back,
-                    child: Icon(Icons.arrow_back, size: 20),
-                  ),
-                  SizedBox(width: 28),
-                  styledText(
-                    'Liked Songs',
-                    color: Colors.white.withOpacity(_appBarTextOpacity),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ],
+    return Scaffold(
+      body: _buildMainScrollView(),
+      bottomNavigationBar: _currentSong == null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: CurrentlyPlayingSong(
+                  song: _currentSong!,
+                  position: 0.4,
+                  isPlaying: false,
+                  playOrPause: () {},
+                ),
               ),
             ),
-          ),
-        ),
-      );
+    );
+  }
 
   Widget _buildMainScrollView() {
-    final double bottomPadding = controller.currentSong == null ? 80 : 150;
+    final double bottomPadding = _currentSong == null ? 80 : 150;
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -112,11 +64,11 @@ class _LikedSongsViewState extends State<LikedSongsView> {
                     color: Colors.transparent,
                     child: SongTile(
                       song: likedSongs[i],
-                      isSelected: likedSongs[i] == controller.currentSong,
+                      isSelected: likedSongs[i] == _currentSong,
                     ),
                   ),
                   onPressed: () {
-                    controller.selectSongInPlaylist(likedSongs, i);
+                    setState(() => _currentSong = likedSongs[i]);
                   },
                 ),
               ),
