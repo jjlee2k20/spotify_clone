@@ -93,7 +93,7 @@ class _LikedSongsViewState extends State<LikedSongsView> {
                   ),
                   SizedBox(height: 8),
                   styledText(
-                    '166 songs',
+                    '${likedSongs.length} songs',
                     color: Colors.white.withOpacity(0.6),
                   ),
                   SizedBox(height: 8),
