@@ -1,5 +1,4 @@
 import 'package:spotify_clone/models/song.dart';
-import 'package:spotify_clone/models/playlist.dart';
 
 final likedSongs = [
   Song(

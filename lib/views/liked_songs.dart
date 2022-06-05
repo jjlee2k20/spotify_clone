@@ -1,11 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:spotify_clone/constants/library.dart';
 import 'package:spotify_clone/models/song.dart';
 import 'package:spotify_clone/utils/common_widgets.dart';
 import 'package:spotify_clone/widgets/currently_playing_song.dart';
-import 'package:spotify_clone/widgets/opacity_feedback.dart';
 import 'package:spotify_clone/widgets/play_shuffle_button.dart';
 import 'package:spotify_clone/widgets/shrink_feedback.dart';
 import 'package:spotify_clone/widgets/song_tile.dart';
@@ -18,7 +15,6 @@ class LikedSongsView extends StatefulWidget {
 }
 
 class _LikedSongsViewState extends State<LikedSongsView> {
-  final _scrollController = ScrollController();
   Song? _currentSong;
 
   @override
@@ -44,34 +40,25 @@ class _LikedSongsViewState extends State<LikedSongsView> {
   }
 
   Widget _buildMainScrollView() {
-    final double bottomPadding = _currentSong == null ? 80 : 150;
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverToBoxAdapter(
-          child: _buildHeader(),
-        ),
-        SliverSafeArea(
-          top: false,
-          sliver: SliverPadding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                childCount: likedSongs.length,
-                (context, i) => ShrinkFeedback(
-                  // wrap with material to make entire tile clickable
-                  child: Material(
-                    color: Colors.transparent,
-                    child: SongTile(
-                      song: likedSongs[i],
-                      isSelected: likedSongs[i] == _currentSong,
-                    ),
-                  ),
-                  onPressed: () {
-                    setState(() => _currentSong = likedSongs[i]);
-                  },
+    return Column(
+      children: [
+        _buildHeader(),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: likedSongs.length,
+            itemBuilder: (context, i) => ShrinkFeedback(
+              // wrap with material to make entire tile clickable
+              child: Material(
+                color: Colors.transparent,
+                child: SongTile(
+                  song: likedSongs[i],
+                  isSelected: likedSongs[i] == _currentSong,
                 ),
               ),
+              onPressed: () {
+                setState(() => _currentSong = likedSongs[i]);
+              },
             ),
           ),
         ),
