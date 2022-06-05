@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:spotify_clone/views/liked_songs.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,12 +20,9 @@ class MyApp extends StatelessWidget {
           bodyText2: TextStyle(color: Colors.white),
         ),
         iconTheme: IconThemeData(color: Colors.white),
-        bottomSheetTheme: BottomSheetThemeData(
-          backgroundColor: Colors.transparent,
-        ),
       ),
       themeMode: ThemeMode.dark,
-      home: LikedSongsView(),
+      home: Scaffold(),
     );
   }
 }
